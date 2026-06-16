@@ -24,8 +24,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone <your-repo-url> telegram-photobot
-cd telegram-photobot
+git clone https://github.com/ichq1069/telegram-photoBot
+cd telegram-photoBot
 ```
 
 ### 2. 配置环境变量
