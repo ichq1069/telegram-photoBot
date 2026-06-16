@@ -159,9 +159,9 @@ async def upload_image(
     tg_channel_id = tg_channel
 
     try:
-        # 使用 Telegram 的 download_file 获取文件路径，或直接用 BytesIO 上传
+        from io import BytesIO
         result = await tg_adapter.send_photo(
-            bot.bot_token, tg_channel, contents,
+            bot.bot_token, tg_channel, BytesIO(contents),
             api_mode=api_mode,
             self_build_url=bot.self_build_api_url,
             self_build_key=bot.self_build_api_key,
@@ -211,18 +211,6 @@ async def upload_image(
         id=record.id, filename=record.filename, file_size=record.file_size,
         direct_link=record.direct_link, https_link=record.https_link,
         markdown_link=record.markdown_link, bbcode_link=record.bbcode_link,
-    )
-
-    LogService.add_log(db, "upload", f"上传图片: {file.filename}", "INFO", "image_upload")
-
-    return ImageUploadResponse(
-        id=record.id,
-        filename=record.filename,
-        file_size=record.file_size,
-        direct_link=record.direct_link,
-        https_link=record.https_link,
-        markdown_link=record.markdown_link,
-        bbcode_link=record.bbcode_link,
     )
 
 

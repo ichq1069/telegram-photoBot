@@ -74,12 +74,17 @@ bot_listener = BotListener()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import asyncio
     setup_logging()
     init_database()
     logging.getLogger("photobot").info("Telegram PhotoBot Manager starting...")
-    await bot_listener.start()
+    listener_task = asyncio.create_task(bot_listener.start())
     yield
     await bot_listener.stop()
+    try:
+        listener_task.cancel()
+    except Exception:
+        pass
     logging.getLogger("photobot").info("Telegram PhotoBot Manager shutting down...")
 
 

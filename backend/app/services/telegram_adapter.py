@@ -43,6 +43,7 @@ class TelegramAdapter:
         api_mode: str = "official",
         self_build_url: str = None,
         self_build_key: str = None,
+        files: Dict[str, tuple] = None,
     ) -> Dict[str, Any]:
         base_url = self._get_base_url(api_mode, self_build_url)
         url = f"{base_url}/bot{bot_token}/{method}"
@@ -50,9 +51,14 @@ class TelegramAdapter:
         client = await self._get_client()
 
         try:
-            response = await client.post(
-                url, json=params or {}, headers=headers
-            )
+            if files:
+                response = await client.post(
+                    url, data=params or {}, files=files, headers=headers,
+                )
+            else:
+                response = await client.post(
+                    url, json=params or {}, headers=headers,
+                )
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
@@ -85,7 +91,7 @@ class TelegramAdapter:
         self,
         bot_token: str,
         chat_id: str,
-        photo: str,
+        photo,
         caption: str = None,
         parse_mode: str = "HTML",
         api_mode: str = "official",
@@ -93,7 +99,19 @@ class TelegramAdapter:
         self_build_key: str = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        params = {"chat_id": chat_id, "photo": photo, "parse_mode": parse_mode, **kwargs}
+        params = {"chat_id": chat_id, "parse_mode": parse_mode, **kwargs}
+        if isinstance(photo, bytes):
+            from io import BytesIO
+            photo = BytesIO(photo)
+        if hasattr(photo, 'read'):
+            params["caption"] = caption
+            return await self.call_method(
+                bot_token, "sendPhoto", params,
+                api_mode=api_mode, self_build_url=self_build_url,
+                self_build_key=self_build_key,
+                files={"photo": ("photo.jpg", photo)},
+            )
+        params["photo"] = photo
         if caption:
             params["caption"] = caption
         return await self.call_method(bot_token, "sendPhoto", params,
@@ -104,14 +122,23 @@ class TelegramAdapter:
         self,
         bot_token: str,
         chat_id: str,
-        document: str,
+        document,
         caption: str = None,
         api_mode: str = "official",
         self_build_url: str = None,
         self_build_key: str = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        params = {"chat_id": chat_id, "document": document, **kwargs}
+        params = {"chat_id": chat_id, **kwargs}
+        if hasattr(document, 'read'):
+            params["caption"] = caption
+            return await self.call_method(
+                bot_token, "sendDocument", params,
+                api_mode=api_mode, self_build_url=self_build_url,
+                self_build_key=self_build_key,
+                files={"document": ("document", document)},
+            )
+        params["document"] = document
         if caption:
             params["caption"] = caption
         return await self.call_method(bot_token, "sendDocument", params,
