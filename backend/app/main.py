@@ -3,6 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text, inspect
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
 from app.services.user_service import UserService
@@ -21,8 +22,27 @@ def setup_logging():
     )
 
 
+def migrate_database():
+    try:
+        inspector = inspect(engine)
+        bot_columns = {c["name"] for c in inspector.get_columns("bot_configs")}
+        missing = {
+            "self_build_api_url": "VARCHAR(512)",
+            "self_build_api_key": "VARCHAR(256)",
+        }
+        for col_name, col_type in missing.items():
+            if col_name not in bot_columns:
+                with engine.connect() as conn:
+                    conn.execute(text(f"ALTER TABLE bot_configs ADD COLUMN {col_name} {col_type}"))
+                    conn.commit()
+                logging.getLogger("photobot").info(f"迁移: 添加列 {col_name}")
+    except Exception:
+        pass
+
+
 def init_database():
     Base.metadata.create_all(bind=engine)
+    migrate_database()
     db = SessionLocal()
     try:
         UserService.ensure_admin_exists(db)
