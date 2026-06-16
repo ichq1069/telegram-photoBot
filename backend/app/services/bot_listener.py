@@ -2,11 +2,16 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.bot import BotConfig
 from app.models.message import MessageTemplate
+from app.models.log import SystemLog
 from app.services.telegram_adapter import tg_adapter
+from app.services.system_service import LogService
+import logging
+import datetime
+import time
 
 
 class BotListener:
-    """Bot 监听器 - 轮询 Telegram 获取消息并触发自动回复"""
+    """Bot 监听器 - 轮询 Telegram 获取消息并触发自动回复 + 群聊监控"""
 
     def __init__(self):
         self.running = False
@@ -52,13 +57,13 @@ class BotListener:
             if not result.get("ok"):
                 bot.status = "error"
                 bot.last_error = result.get("description", "Unknown")
-                bot.last_check_time = __import__("datetime").datetime.utcnow()
+                bot.last_check_time = datetime.datetime.utcnow()
                 db.commit()
                 return
 
             if bot.status != "online":
                 bot.status = "online"
-                bot.last_check_time = __import__("datetime").datetime.utcnow()
+                bot.last_check_time = datetime.datetime.utcnow()
                 db.commit()
 
             offset = self.bots.get(bot.id, (0, 0))[0]
@@ -86,17 +91,53 @@ class BotListener:
         except Exception as e:
             bot.status = "error"
             bot.last_error = str(e)
-            bot.last_check_time = __import__("datetime").datetime.utcnow()
+            bot.last_check_time = datetime.datetime.utcnow()
             db.commit()
 
     async def _handle_update(self, db: Session, bot: BotConfig, update: dict):
+        # 处理消息
         message = update.get("message", {})
+        if message:
+            text = (message.get("text") or "").strip()
+            chat_id = str(message.get("chat", {}).get("id", ""))
+            sender = message.get("from", {})
+            sender_name = sender.get("first_name", "") or sender.get("username", "未知")
+
+            # 记录群聊消息
+            LogService.add_log(
+                db, "bot", f"[{chat_id}] {sender_name}: {text[:100]}",
+                "INFO", "group_chat", ip_address=sender.get("username", ""),
+            )
+
+            if text:
+                await self._handle_message(db, bot, message, chat_id)
+
+        # 处理成员变动
+        member_change = update.get("my_chat_member") or update.get("chat_member")
+        if member_change:
+            chat_id = str(member_change.get("chat", {}).get("id", ""))
+            old_status = member_change.get("old_chat_member", {}).get("status", "")
+            new_status = member_change.get("new_chat_member", {}).get("status", "")
+            user = member_change.get("from", {})
+            user_name = user.get("first_name", "") or user.get("username", "未知")
+
+            action_map = {
+                "left": "退出",
+                "kicked": "被踢出",
+                "member": "加入",
+                "restricted": "限制",
+                "administrator": "成为管理员",
+                "creator": "成为群主",
+            }
+            action = action_map.get(new_status, new_status)
+            LogService.add_log(
+                db, "member", f"[{chat_id}] {user_name} {action} (旧:{old_status})",
+                "INFO", "member_change",
+            )
+
+    async def _handle_message(self, db: Session, bot: BotConfig, message: dict, chat_id: str):
         text = (message.get("text") or "").strip()
         if not text:
-            return
-
-        chat_id = str(message.get("chat", {}).get("id", ""))
-        if not chat_id:
             return
 
         if not bot.chat_id:
@@ -111,36 +152,22 @@ class BotListener:
         for tpl in templates:
             if tpl.trigger_keyword and text.lower() == tpl.trigger_keyword.lower():
                 reply_type = tpl.reply_type or "text"
-                if reply_type == "text" or reply_type == "photo" or reply_type == "document":
-                    content = tpl.reply_content or ""
-                    if reply_type == "photo":
-                        await tg_adapter.send_photo(
-                            bot.bot_token, chat_id, content,
-                            api_mode=bot.api_mode or "official",
-                            self_build_url=bot.self_build_api_url,
-                            self_build_key=bot.self_build_api_key,
-                        )
-                    elif reply_type == "document":
-                        await tg_adapter.send_document(
-                            bot.bot_token, chat_id, content,
-                            api_mode=bot.api_mode or "official",
-                            self_build_url=bot.self_build_api_url,
-                            self_build_key=bot.self_build_api_key,
-                        )
-                    else:
-                        await tg_adapter.send_message(
-                            bot.bot_token, chat_id, content,
-                            api_mode=bot.api_mode or "official",
-                            self_build_url=bot.self_build_api_url,
-                            self_build_key=bot.self_build_api_key,
-                        )
-                    break
-                elif reply_type == "welcome":
-                    welcome = tpl.welcome_message or "Welcome!"
-                    await tg_adapter.send_message(
-                        bot.bot_token, chat_id, welcome,
-                        api_mode=bot.api_mode or "official",
-                        self_build_url=bot.self_build_api_url,
-                        self_build_key=bot.self_build_api_key,
+                content = tpl.reply_content or ""
+                send_kwargs = {
+                    "api_mode": bot.api_mode or "official",
+                    "self_build_url": bot.self_build_api_url,
+                    "self_build_key": bot.self_build_api_key,
+                }
+                if reply_type == "photo":
+                    await tg_adapter.send_photo(
+                        bot.bot_token, chat_id, content, **send_kwargs,
                     )
-                    break
+                elif reply_type == "document":
+                    await tg_adapter.send_document(
+                        bot.bot_token, chat_id, content, **send_kwargs,
+                    )
+                else:
+                    await tg_adapter.send_message(
+                        bot.bot_token, chat_id, content, **send_kwargs,
+                    )
+                break

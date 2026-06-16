@@ -119,12 +119,13 @@ async function handleUpload({ file }) {
   formData.append('file', file)
   try {
     const token = localStorage.getItem('token')
-    await imageAPI.upload(formData, {
+    const res = await imageAPI.upload(formData, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    ElMessage.success('上传成功')
+    const data = res.data
+    ElMessage.success(`上传成功: ${data.filename}`)
     fetchImages()
-  } catch {
+  } catch (err) {
     ElMessage.error('上传失败')
   }
 }
