@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: photobot-backend
+    restart: unless-stopped
+    ports:
+      - "8000"
+    volumes:
+      - photobot_data:/app/data
+    environment:
+      - APP_NAME=Telegram PhotoBot Manager
+      - DEBUG=false
+      - DB_TYPE=sqlite
+      - SQLITE_PATH=/app/data/photobot.db
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - TG_API_MODE=${TG_API_MODE:-official}
+      - TG_SELF_BUILD_API_URL=${TG_SELF_BUILD_API_URL:-}
+      - TG_SELF_BUILD_API_KEY=${TG_SELF_BUILD_API_KEY:-}
+      - MYSQL_HOST=${MYSQL_HOST:-}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-photobot}
+      - SYNC_INTERVAL_MINUTES=${SYNC_INTERVAL_MINUTES:-60}
+      - UPLOAD_MAX_SIZE_MB=${UPLOAD_MAX_SIZE_MB:-20}
+      - COMPRESS_ENABLED=${COMPRESS_ENABLED:-true}
+      - COMPRESS_QUALITY=${COMPRESS_QUALITY:-85}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - photobot_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: photobot-frontend
+    restart: unless-stopped
+    ports:
+      - "67533:80"
+    depends_on:
+      - backend
+    networks:
+      - photobot_net
+
+volumes:
+  photobot_data:
+
+networks:
+  photobot_net:
+    driver: bridge
