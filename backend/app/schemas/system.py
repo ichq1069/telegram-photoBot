@@ -32,6 +32,13 @@ class LogResponse(BaseModel):
         from_attributes = True
 
 
+class LogListResponse(BaseModel):
+    items: list[LogResponse]
+    total: int
+    page: int
+    page_size: int
+
+
 class LogQuery(BaseModel):
     log_type: Optional[str] = None
     level: Optional[str] = None

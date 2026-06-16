@@ -26,6 +26,8 @@ class BotConfig(Base):
     group_name = Column(String(128), default="default")
     proxy_url = Column(String(256), nullable=True)
     api_mode = Column(String(16), default="official")
+    self_build_api_url = Column(String(512), nullable=True)
+    self_build_api_key = Column(String(256), nullable=True)
     status = Column(String(16), default="offline")
     is_enabled = Column(Boolean, default=True)
     last_check_time = Column(DateTime, nullable=True)

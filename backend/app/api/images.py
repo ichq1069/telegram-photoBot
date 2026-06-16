@@ -99,7 +99,12 @@ async def upload_image(
         db, filename, file.filename, file_size, mime_type, width, height, thumb_path
     )
 
-    base_url = str(request.base_url).rstrip("/") if request else ""
+    forwarded_host = request.headers.get("host", "")
+    forwarded_proto = request.headers.get("x-forwarded-proto", "http")
+    if forwarded_host:
+        base_url = f"{forwarded_proto}://{forwarded_host}"
+    else:
+        base_url = str(request.base_url).rstrip("/")
     ImageService.update_links(db, record, base_url)
 
     LogService.add_log(db, "upload", f"上传图片: {file.filename}", "INFO", "image_upload")

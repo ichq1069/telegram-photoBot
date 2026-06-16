@@ -59,7 +59,12 @@ class BotService:
             return None
 
         try:
-            result = await tg_adapter.get_me(bot.bot_token)
+            result = await tg_adapter.get_me(
+                bot.bot_token,
+                api_mode=bot.api_mode or "official",
+                self_build_url=bot.self_build_api_url,
+                self_build_key=bot.self_build_api_key,
+            )
             from datetime import datetime
 
             if result.get("ok"):

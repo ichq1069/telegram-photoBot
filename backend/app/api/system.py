@@ -9,6 +9,7 @@ from app.schemas.system import (
     SystemConfigResponse,
     SystemConfigUpdate,
     LogResponse,
+    LogListResponse,
     DatabaseStatus,
     SystemStats,
 )
@@ -44,7 +45,7 @@ def update_config(
     return {"message": "配置更新成功"}
 
 
-@router.get("/logs", response_model=dict)
+@router.get("/logs", response_model=LogListResponse)
 def get_logs(
     log_type: Optional[str] = None,
     level: Optional[str] = None,
@@ -58,12 +59,12 @@ def get_logs(
         db, log_type=log_type, level=level, keyword=keyword,
         page=page, page_size=page_size,
     )
-    return {
-        "items": logs,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-    }
+    return LogListResponse(
+        items=logs,
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/database/status", response_model=DatabaseStatus)

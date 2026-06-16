@@ -64,6 +64,14 @@
             <el-radio value="self_build">自建中转API</el-radio>
           </el-radio-group>
         </el-form-item>
+        <template v-if="form.api_mode === 'self_build'">
+          <el-form-item label="中转API地址" prop="self_build_api_url">
+            <el-input v-model="form.self_build_api_url" placeholder="例如: https://your-api.example.com" />
+          </el-form-item>
+          <el-form-item label="API密钥">
+            <el-input v-model="form.self_build_api_key" placeholder="可选，中转服务要求的密钥" />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -92,6 +100,8 @@ const form = reactive({
   group_name: 'default',
   proxy_url: '',
   api_mode: 'official',
+  self_build_api_url: '',
+  self_build_api_key: '',
 })
 
 const rules = {
@@ -127,11 +137,16 @@ function showDialog(bot) {
       group_name: bot.group_name,
       proxy_url: bot.proxy_url || '',
       api_mode: bot.api_mode,
+      self_build_api_url: bot.self_build_api_url || '',
+      self_build_api_key: bot.self_build_api_key || '',
     })
   } else {
     formRef.value?.resetFields()
     form.chat_id = ''
     form.proxy_url = ''
+    form.api_mode = 'official'
+    form.self_build_api_url = ''
+    form.self_build_api_key = ''
   }
   dialogVisible.value = true
 }

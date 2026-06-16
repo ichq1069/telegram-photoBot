@@ -10,6 +10,8 @@ class BotCreate(BaseModel):
     group_name: str = "default"
     proxy_url: Optional[str] = None
     api_mode: str = "official"
+    self_build_api_url: Optional[str] = None
+    self_build_api_key: Optional[str] = None
 
 
 class BotUpdate(BaseModel):
@@ -19,6 +21,8 @@ class BotUpdate(BaseModel):
     group_name: Optional[str] = None
     proxy_url: Optional[str] = None
     api_mode: Optional[str] = None
+    self_build_api_url: Optional[str] = None
+    self_build_api_key: Optional[str] = None
     is_enabled: Optional[bool] = None
 
 
@@ -30,6 +34,8 @@ class BotResponse(BaseModel):
     group_name: str
     proxy_url: Optional[str] = None
     api_mode: str
+    self_build_api_url: Optional[str] = None
+    self_build_api_key: Optional[str] = None
     status: str
     is_enabled: bool
     last_check_time: Optional[datetime] = None

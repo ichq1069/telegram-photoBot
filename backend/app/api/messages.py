@@ -75,6 +75,9 @@ async def broadcast(
         raise HTTPException(status_code=400, detail="机器人已禁用")
 
     result = await tg_adapter.broadcast_message(
-        bot.bot_token, data.chat_ids, data.message, data.parse_mode
+        bot.bot_token, data.chat_ids, data.message, data.parse_mode,
+        api_mode=bot.api_mode or "official",
+        self_build_url=bot.self_build_api_url,
+        self_build_key=bot.self_build_api_key,
     )
     return result
