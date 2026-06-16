@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
 from app.services.user_service import UserService
 from app.services.image_service import ImageService
+from app.services.bot_listener import BotListener
 
 
 def setup_logging():
@@ -68,12 +69,17 @@ def init_database():
     ImageService.ensure_dirs()
 
 
+bot_listener = BotListener()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
     init_database()
     logging.getLogger("photobot").info("Telegram PhotoBot Manager starting...")
+    await bot_listener.start()
     yield
+    await bot_listener.stop()
     logging.getLogger("photobot").info("Telegram PhotoBot Manager shutting down...")
 
 

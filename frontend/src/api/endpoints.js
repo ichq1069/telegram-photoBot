@@ -30,9 +30,9 @@ export const imageAPI = {
   get(id) { return api.get(`/images/${id}`) },
   update(id, data) { return api.put(`/images/${id}`, data) },
   delete(id) { return api.delete(`/images/${id}`) },
-  upload(formData) {
+  upload(formData, config = {}) {
     return api.post('/images/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': 'multipart/form-data', ...config.headers },
     })
   },
   stats() { return api.get('/images/stats') },

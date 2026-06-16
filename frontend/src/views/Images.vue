@@ -3,18 +3,14 @@
     <div class="page-header">
       <h3>图床管理</h3>
       <div class="header-actions">
-        <el-upload
-          :action="uploadUrl"
-          :headers="uploadHeaders"
-          multiple
-          :show-file-list="false"
-          :on-success="onUploadSuccess"
-          :on-error="onUploadError"
-          :before-upload="beforeUpload"
-          accept="image/*"
-        >
-          <el-button type="primary">上传图片</el-button>
-        </el-upload>
+      <el-upload
+        :http-request="handleUpload"
+        multiple
+        :show-file-list="false"
+        accept="image/*"
+      >
+        <el-button type="primary">上传图片</el-button>
+      </el-upload>
         <el-select v-model="filterCategory" placeholder="分类筛选" clearable style="width:140px;margin-left:10px">
           <el-option label="未分类" value="uncategorized" />
           <el-option label="全部" value="" />
@@ -91,11 +87,6 @@ const filterCategory = ref('')
 const detailVisible = ref(false)
 const selectedImage = ref(null)
 
-const uploadUrl = '/api/images/upload'
-const uploadHeaders = computed(() => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
-}))
-
 function formatSize(bytes) {
   if (!bytes) return '0 B'
   if (bytes < 1024) return bytes + ' B'
@@ -113,27 +104,29 @@ async function fetchImages() {
   }
 }
 
-function beforeUpload(file) {
+async function handleUpload({ file }) {
   const isImage = file.type.startsWith('image/')
   const isLt20M = file.size / 1024 / 1024 < 20
   if (!isImage) {
     ElMessage.error('只能上传图片文件')
-    return false
+    return
   }
   if (!isLt20M) {
     ElMessage.error('图片大小不能超过20MB')
-    return false
+    return
   }
-  return true
-}
-
-function onUploadSuccess(resp) {
-  ElMessage.success('上传成功')
-  fetchImages()
-}
-
-function onUploadError() {
-  ElMessage.error('上传失败')
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const token = localStorage.getItem('token')
+    await imageAPI.upload(formData, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    ElMessage.success('上传成功')
+    fetchImages()
+  } catch {
+    ElMessage.error('上传失败')
+  }
 }
 
 function showDetail(img) {
