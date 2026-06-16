@@ -12,7 +12,7 @@ services:
       - DEBUG=false
       - DB_TYPE=sqlite
       - SQLITE_PATH=/app/data/photobot.db
-      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production-please}
       - TG_API_MODE=${TG_API_MODE:-official}
       - TG_SELF_BUILD_API_URL=${TG_SELF_BUILD_API_URL:-}
       - TG_SELF_BUILD_API_KEY=${TG_SELF_BUILD_API_KEY:-}
