@@ -175,12 +175,20 @@ async def upload_image(
                 file_obj = media[-1]
                 tg_file_id = file_obj.get("file_id", "")
             else:
-                # 尝试从 getMe 获取文件
                 pass
         else:
-            raise RuntimeError(result.get("description", "TG 上传失败"))
+            desc = result.get("description", "TG 上传失败")
+            if "Bad Request" in desc:
+                raise HTTPException(status_code=400, detail=f"Telegram 返回错误: {desc}")
+            raise RuntimeError(desc)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Telegram 上传失败: {str(e)}")
+        msg = str(e)
+        if "400" in msg or "Bad Request" in msg:
+            clean = msg.split("'")[1] if "'" in msg else msg
+            raise HTTPException(status_code=400, detail=f"Telegram 上传失败: {clean}")
+        raise HTTPException(status_code=500, detail=f"Telegram 上传失败: {msg}")
 
     # 生成外链
     base_url = ""

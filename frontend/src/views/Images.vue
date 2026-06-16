@@ -18,6 +18,32 @@
       </div>
     </div>
 
+    <el-card shadow="never" style="margin-bottom:20px">
+      <template #header>
+        <span>上传配置</span>
+      </template>
+      <el-form inline>
+        <el-form-item label="目标机器人">
+          <el-select v-model="uploadBotId" placeholder="选择机器人或留空上传到本地" clearable style="width:200px">
+            <el-option
+              v-for="bot in bots"
+              :key="bot.id"
+              :label="bot.name"
+              :value="bot.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="API 模式" v-if="selectedBot">
+          <el-tag :type="selectedBot.api_mode === 'official' ? '' : 'warning'" size="small">
+            {{ selectedBot.api_mode === 'official' ? '官方API' : '自建API' }}
+          </el-tag>
+        </el-form-item>
+        <el-form-item label="频道 Chat ID" v-if="selectedBot">
+          <el-input v-model="channelId" placeholder="留空使用机器人配置的 Chat ID" style="width:220px" />
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <div v-if="images.length === 0 && !loading" class="empty-state">
       <p>暂无图片，点击上方按钮上传</p>
     </div>
@@ -86,6 +112,13 @@ const loading = ref(false)
 const filterCategory = ref('')
 const detailVisible = ref(false)
 const selectedImage = ref(null)
+const bots = ref([])
+const uploadBotId = ref(null)
+const channelId = ref('')
+
+const selectedBot = computed(() => {
+  return bots.value.find(b => b.id === uploadBotId.value) || null
+})
 
 function formatSize(bytes) {
   if (!bytes) return '0 B'
@@ -119,14 +152,23 @@ async function handleUpload({ file }) {
   formData.append('file', file)
   try {
     const token = localStorage.getItem('token')
+    const params = {}
+    if (uploadBotId.value) {
+      params.bot_id = uploadBotId.value
+    }
+    if (channelId.value) {
+      params.channel_id = channelId.value
+    }
     const res = await imageAPI.upload(formData, {
       headers: { Authorization: `Bearer ${token}` },
+      params,
     })
     const data = res.data
     ElMessage.success(`上传成功: ${data.filename}`)
     fetchImages()
   } catch (err) {
-    ElMessage.error('上传失败')
+    const detail = err.response?.data?.detail || '上传失败'
+    ElMessage.error(detail)
   }
 }
 
@@ -156,7 +198,17 @@ async function deleteImage(id) {
   fetchImages()
 }
 
-onMounted(fetchImages)
+async function fetchBots() {
+  try {
+    const res = await imageAPI.list()
+    bots.value = res.data || []
+  } catch {}
+}
+
+onMounted(() => {
+  fetchImages()
+  fetchBots()
+})
 </script>
 
 <style scoped>
