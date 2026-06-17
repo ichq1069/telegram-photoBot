@@ -178,17 +178,11 @@ async def upload_image(
                 pass
         else:
             desc = result.get("description", "TG 上传失败")
-            if "Bad Request" in desc:
-                raise HTTPException(status_code=400, detail=f"Telegram 返回错误: {desc}")
-            raise RuntimeError(desc)
+            raise HTTPException(status_code=400, detail=f"Telegram 返回错误: {desc}")
     except HTTPException:
         raise
     except Exception as e:
-        msg = str(e)
-        if "400" in msg or "Bad Request" in msg:
-            clean = msg.split("'")[1] if "'" in msg else msg
-            raise HTTPException(status_code=400, detail=f"Telegram 上传失败: {clean}")
-        raise HTTPException(status_code=500, detail=f"Telegram 上传失败: {msg}")
+        raise HTTPException(status_code=500, detail=f"上传失败: {str(e)}")
 
     # 生成外链
     base_url = ""

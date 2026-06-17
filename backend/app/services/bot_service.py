@@ -24,6 +24,8 @@ class BotService:
             group_name=data.group_name,
             proxy_url=data.proxy_url,
             api_mode=data.api_mode,
+            self_build_api_url=data.self_build_api_url,
+            self_build_api_key=data.self_build_api_key,
             status="offline",
         )
         db.add(bot)

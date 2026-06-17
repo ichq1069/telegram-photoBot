@@ -62,7 +62,12 @@ class TelegramAdapter:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            return {"ok": False, "error_code": e.response.status_code, "description": str(e)}
+            try:
+                body = e.response.json()
+                desc = body.get("description", str(e))
+            except Exception:
+                desc = f"HTTP {e.response.status_code}"
+            return {"ok": False, "error_code": e.response.status_code, "description": desc}
         except httpx.RequestError as e:
             return {"ok": False, "error_code": 500, "description": f"网络请求失败: {str(e)}"}
 

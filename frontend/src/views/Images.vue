@@ -105,7 +105,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { imageAPI } from '@/api/endpoints'
+import { imageAPI, botAPI } from '@/api/endpoints'
 
 const images = ref([])
 const loading = ref(false)
@@ -167,8 +167,7 @@ async function handleUpload({ file }) {
     ElMessage.success(`上传成功: ${data.filename}`)
     fetchImages()
   } catch (err) {
-    const detail = err.response?.data?.detail || '上传失败'
-    ElMessage.error(detail)
+    // axios 拦截器已显示错误详情
   }
 }
 
@@ -200,7 +199,7 @@ async function deleteImage(id) {
 
 async function fetchBots() {
   try {
-    const res = await imageAPI.list()
+    const res = await botAPI.list()
     bots.value = res.data || []
   } catch {}
 }
